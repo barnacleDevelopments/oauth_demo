@@ -1,0 +1,19 @@
+{
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "mongoose": "^5.11.19",
+    "node-uuid": "^1.4.8"
+  },
+  "name": "0auth",
+  "version": "1.0.0",
+  "description": "A oauth implementation test.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Devin Davis",
+  "license": "ISC",
+  "type": "module"
+}
