@@ -10,7 +10,7 @@ import AuthCode from "../models/AuthCode.js";
 const router = express.Router();
 
 router.get("/authorize", (req, res, next) => {
-    const responseType = req.query.responseType;
+    const responseType = req.query.response_type;
     const clientId = req.query.client_id;
     const redirectUri = req.query.redirect_uri
     const scope = req.query.scope;
@@ -28,7 +28,7 @@ router.get("/authorize", (req, res, next) => {
         // cancle the request - client id is missing
     }
 
-    Client.findById(clientId, (err, client) => {
+    Client.findOne({ clientId: clientId }, (err, client) => {
         if (err) {
             // handle error by passing it to middleware
             next(err);
