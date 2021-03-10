@@ -1,6 +1,5 @@
 import util from "util";
 
-
 function OAuthError(code, message, err) {
     Error.call(this);
     Error.captureStackTrace(this, this.constructor);

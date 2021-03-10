@@ -40,6 +40,10 @@ router.get("/authorize", (req, res, next) => {
             res)
     }
 
+    if (!scope || scope.indexOf('openid') < 0) {
+        next(new OAuthError('invalid_scope', 'Scope is missing or not well-defined'))
+    }
+
     Client.findOne({ clientId: clientId }, (err, client) => {
         if (err) {
             // handle error by passing it to middleware
@@ -63,7 +67,7 @@ router.get("/authorize", (req, res, next) => {
         if (scope !== client.scope) {
             // handle the scope
             handleError(
-                OAuthError("invalid_scope", "The provided scope is invalid, unknown or malformed."),
+                OAuthError("invalid_scope", "The provided scope is missing or not defined."),
                 res)
         }
 
