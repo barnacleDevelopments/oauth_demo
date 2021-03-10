@@ -5,6 +5,9 @@ import express from "express";
 import Client from "../models/Client.js";
 import AuthCode from "../models/AuthCode.js";
 
+// ERROR HANDLER AND ERROR CLASS
+import handleError from "../handlers/error_handler.js";
+import OAuthError from "../classes/0AuthError.js";
 
 // ROUTER 
 const router = express.Router();
@@ -18,14 +21,23 @@ router.get("/authorize", (req, res, next) => {
 
     if (!responseType) {
         // cancel the request - response type missing
+        handleError(
+            OAuthError("unsupported_response_type", "No reponse type was provided."),
+            res)
     }
 
     if (responseType !== "code") {
         // notify the user aboutt an unsupported response type
+        handleError(
+            OAuthError("unsupported_response_type", "Invalid response type was provided."),
+            res)
     }
 
     if (!clientId) {
-        // cancle the request - client id is missing
+        // cancel the request - client id is missing
+        handleError(
+            OAuthError("unauthorized_client", "No client id was provided."),
+            res)
     }
 
     Client.findOne({ clientId: clientId }, (err, client) => {
@@ -36,15 +48,23 @@ router.get("/authorize", (req, res, next) => {
 
         if (!client) {
             // cancel the request - the client does not exist
-
+            handleError(
+                OAuthError("unauthorized_client", "The client does not exist."),
+                res)
         }
 
         if (redirectUri !== client.redirectUri) {
             // cancel the request
+            handleError(
+                OAuthError("invalid_grant", "Provided redirect URI does not match."),
+                res)
         }
 
         if (scope !== client.scope) {
             // handle the scope
+            handleError(
+                OAuthError("invalid_scope", "The provided scope is invalid, unknown or malformed."),
+                res)
         }
 
         const authCode = new AuthCode({
@@ -54,6 +74,7 @@ router.get("/authorize", (req, res, next) => {
         });
 
         authCode.save();
+
         const response = {
             state: state,
             code: authCode.code

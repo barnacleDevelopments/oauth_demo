@@ -2,10 +2,10 @@
 import express from "express";
 
 // MODELS
-import AuthCode from "../models/AuthCode";
-import Client from "../models/Client";
-import Token from "../models/Token";
-import RefreshToken from "../models/RefreshTokem";
+import AuthCode from "../models/AuthCode.js";
+import Client from "../models/Client.js";
+import Token from "../models/Token.js";
+import RefreshToken from "../models/RefreshToken.js";
 
 // ROUTES
 const route = express.Router();
@@ -20,6 +20,9 @@ route.get("/token", (req, res, next) => {
 
     if (!grantType) {
         // no grant type passed - cancel this request
+        handleError(
+            OAuthError("invalid_grant", "No grant type was provided."),
+            res)
     }
 
     if (grantType === "authorization_code") {
@@ -27,21 +30,31 @@ route.get("/token", (req, res, next) => {
     } else if (grantType === "refresh_token") {
         if (!refreshToken) {
             // no refresh token provided - cancel
+            handleError(
+                OAuthError("invalid_grant", "No refresh token was provided."),
+                res)
         }
     }
 
     RefreshToken.findOne({ token: refreshToken }, (err, token) => {
         if (err) {
             // handle error
+            next(err);
         }
 
         if (!token) {
             // no refresh token found
+            handleError(
+                OAuthError("invalid_grant", "No refresh token found."),
+                res)
         }
 
 
         if (token.consumed) {
             // refresh token got consumed already
+            handleError(
+                OAuthError("invalid_grant", "Refresh token was already consumed."),
+                res)
         }
 
         // consume all previous refresh tokens
@@ -81,14 +94,21 @@ route.get("/token", (req, res, next) => {
     AuthCode.findOne({ code: authCode }, (err, code) => {
         if (err) {
             // handle error
+            next(err);
         }
 
         if (!code) {
             // no valid authorization code provided - cancel 
+            handleError(
+                OAuthError("invalid_grant", "No valid authorization code was provided."),
+                res)
         }
 
         if (code.consumed) {
             // the code got consumed already - cancel
+            handleError(
+                OAuthError("invalid_grant", "Authorization code was already consumed."),
+                res)
         }
 
         code.consumed = true;
@@ -96,16 +116,25 @@ route.get("/token", (req, res, next) => {
 
         if (code.redirectUri !== redirectUri) {
             // cancel the request
+            handleError(
+                OAuthError("invalid_grant", "Authorization code uri does not match."),
+                res)
         }
 
         // validate client - an extra security measure 
         Client.findOne({ clientId: clientId }, (err, client) => {
             if (err) {
                 // the client id provided was a mismatch or does not exist
+                handleError(
+                    OAuthError("unauthorized_client", "The client id provided was a mismatch or does not exist."),
+                    res)
             }
 
             if (!client) {
                 // the client id provided was a mismatch or does not exist
+                handleError(
+                    OAuthError("unauthorized_client", "The client id provided was a mismatch or does not exist."),
+                    res)
             }
 
             const _refreshToken = new RefreshToken({
@@ -130,3 +159,5 @@ route.get("/token", (req, res, next) => {
         });
     });
 });
+
+export default route;

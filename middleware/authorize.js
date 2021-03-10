@@ -1,8 +1,8 @@
-import Token from "../models/Token";
+import Token from "../models/Token.js";
 
 
 const authorize = (req, res, next) => {
-    const accessToken;
+    let accessToken;
 
     // check the authorixation header
     if (req.headers.authorization) {
