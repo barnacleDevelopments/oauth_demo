@@ -22,21 +22,21 @@ router.get("/authorize", (req, res, next) => {
     if (!responseType) {
         // cancel the request - response type missing
         handleError(
-            OAuthError("unsupported_response_type", "No reponse type was provided."),
+            new OAuthError("unsupported_response_type", "No reponse type was provided."),
             res)
     }
 
     if (responseType !== "code") {
         // notify the user aboutt an unsupported response type
         handleError(
-            OAuthError("unsupported_response_type", "Invalid response type was provided."),
+            new OAuthError("unsupported_response_type", "Invalid response type was provided."),
             res)
     }
 
     if (!clientId) {
         // cancel the request - client id is missing
         handleError(
-            OAuthError("unauthorized_client", "No client id was provided."),
+            new OAuthError("unauthorized_client", "No client id was provided."),
             res)
     }
 
@@ -45,6 +45,7 @@ router.get("/authorize", (req, res, next) => {
     }
 
     Client.findOne({ clientId: clientId }, (err, client) => {
+
         if (err) {
             // handle error by passing it to middleware
             next(err);
@@ -53,23 +54,23 @@ router.get("/authorize", (req, res, next) => {
         if (!client) {
             // cancel the request - the client does not exist
             handleError(
-                OAuthError("unauthorized_client", "The client does not exist."),
+                new OAuthError("unauthorized_client", "The client does not exist."),
                 res)
         }
 
         if (redirectUri !== client.redirectUri) {
             // cancel the request
             handleError(
-                OAuthError("invalid_grant", "Provided redirect URI does not match."),
+                new OAuthError("invalid_grant", "Provided redirect URI does not match."),
                 res)
         }
-
-        if (scope !== client.scope) {
-            // handle the scope
-            handleError(
-                OAuthError("invalid_scope", "The provided scope is missing or not defined."),
-                res)
-        }
+        // console.log(scope, client.scope)
+        // if (scope !== client.scope) {
+        //     // handle the scope
+        //     handleError(
+        //         new OAuthError("invalid_scope", "The provided scope is missing or not defined."),
+        //         res)
+        // }
 
         const authCode = new AuthCode({
             clientId: clientId,
@@ -84,12 +85,13 @@ router.get("/authorize", (req, res, next) => {
             code: authCode.code
         }
 
-
         if (redirectUri) {
             const redirect = redirectUri +
-                '?code=' + response.code + (state === undefined ? '' : '&state=' + state);
+                '?code=' + response.code +
+                (state === undefined ? '' : '&state=' + state);
             res.redirect(redirect);
         } else {
+            console.log(response)
             res.json(response)
         }
     })

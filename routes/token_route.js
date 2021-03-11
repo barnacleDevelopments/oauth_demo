@@ -10,7 +10,6 @@ import RefreshToken from "../models/RefreshToken.js";
 // ROUTES
 const route = express.Router();
 
-
 route.get("/token", (req, res, next) => {
     const grantType = req.body.grant_type;
     const refreshToken = req.body.refresh_token;
@@ -21,7 +20,7 @@ route.get("/token", (req, res, next) => {
     if (!grantType) {
         // no grant type passed - cancel this request
         handleError(
-            OAuthError("invalid_grant", "No grant type was provided."),
+            OAuthError("invalid_request", "Missing parameter: grant_type"),
             res)
     }
 
@@ -91,6 +90,7 @@ route.get("/token", (req, res, next) => {
 
     })
 
+    // query database for authorization code
     AuthCode.findOne({ code: authCode }, (err, code) => {
         if (err) {
             // handle error
@@ -121,7 +121,7 @@ route.get("/token", (req, res, next) => {
                 res)
         }
 
-        // validate client - an extra security measure 
+        // query database for client - validate client - an extra security measure 
         Client.findOne({ clientId: clientId }, (err, client) => {
             if (err) {
                 // the client id provided was a mismatch or does not exist
@@ -146,7 +146,7 @@ route.get("/token", (req, res, next) => {
                 userId: code.userId
             });
 
-            token.save()
+            _token.save()
 
             // send the new token to the consumer
             const response = {
@@ -155,6 +155,35 @@ route.get("/token", (req, res, next) => {
                 expires_in: _token.expiresIn,
                 token_type: _token.tokenType
             }
+
+            if (client.scope && (sclient.scope.indexOf('openid') >= 0)) {
+                // An OpenID connect request
+                const _idToken = new _idToken({
+                    iss: client.redirectUri,
+                    aud: client.clientId,
+                    userId: code.userId
+                });
+
+                _idToken.save()
+
+                const _token = new Token({
+                    refreshToken: _refreshToken.token,
+                    idToken: _idToken.sub,
+                    userId: code.userId
+                });
+
+                _token.save()
+
+                response = {
+                    access_token: _token.accessToken,
+                    refresh_token: _token.refreshToken,
+                    expires_in: _token.expiresIn,
+                    token_type: _token.tokenType,
+                    id_token: _idToken.sub
+                }
+
+            }
+
             res.json(response);
         });
     });

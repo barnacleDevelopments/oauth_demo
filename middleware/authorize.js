@@ -1,5 +1,6 @@
+import OAuthError from "../classes/0AuthError.js";
+import handleError from "../handlers/error_handler.js";
 import Token from "../models/Token.js";
-
 
 const authorize = (req, res, next) => {
     let accessToken;
@@ -31,14 +32,18 @@ const authorize = (req, res, next) => {
     }, (err, token) => {
         if (err) {
             // handle error
+            next(err)
         }
 
         if (!token) {
             // no token found - cancel
+            handleError(new OAuthError("invalid_request", "Malformed or non-existing token."), res)
         }
 
         if (token.consumed) {
             // the token got consumed already - cancel
+            handleError(new OAuthError("unauthorized_client", "Token already consumed."), res)
+
         }
 
         // consume all tokens - including the one used
